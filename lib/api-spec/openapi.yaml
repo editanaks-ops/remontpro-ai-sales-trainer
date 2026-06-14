@@ -1,22 +1,31 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: РемонтPRO API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: managers
+    description: Manager operations
+  - name: trainings
+    description: Training operations
+  - name: messages
+    description: Message operations
+  - name: admin
+    description: Admin operations
+  - name: stats
+    description: Statistics operations
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +33,297 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /managers:
+    get:
+      operationId: getManagers
+      tags: [managers]
+      summary: List all managers
+      responses:
+        "200":
+          description: List of managers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Manager"
+    post:
+      operationId: createManager
+      tags: [managers]
+      summary: Create a manager
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ManagerInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Manager"
+
+  /managers/{id}:
+    get:
+      operationId: getManager
+      tags: [managers]
+      summary: Get manager by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Manager
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagerDetail"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteManager
+      tags: [managers]
+      summary: Delete manager
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResult"
+        "400":
+          description: Cannot delete
+
+  /trainings:
+    get:
+      operationId: getTrainings
+      tags: [trainings]
+      summary: List trainings
+      parameters:
+        - name: managerId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: difficulty
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: status
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: dateFrom
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: dateTo
+          in: query
+          schema:
+            type: ["string", "null"]
+      responses:
+        "200":
+          description: List of trainings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Training"
+    post:
+      operationId: createTraining
+      tags: [trainings]
+      summary: Create a new training
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrainingInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Training"
+
+  /trainings/{id}:
+    get:
+      operationId: getTraining
+      tags: [trainings]
+      summary: Get training by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Training detail with messages and feedback
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingDetail"
+        "404":
+          description: Not found
+
+  /trainings/{id}/message:
+    post:
+      operationId: sendMessage
+      tags: [messages]
+      summary: Send a manager message and get AI client reply + coach feedback
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "200":
+          description: AI response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIResponse"
+        "400":
+          description: Bad request
+        "404":
+          description: Not found
+
+  /trainings/{id}/finish:
+    post:
+      operationId: finishTraining
+      tags: [trainings]
+      summary: Finish training and get final evaluation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Final report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinalReport"
+        "400":
+          description: Bad request
+        "404":
+          description: Not found
+
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [admin]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginInput"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLoginResult"
+        "401":
+          description: Unauthorized
+
+  /admin/logout:
+    post:
+      operationId: adminLogout
+      tags: [admin]
+      summary: Admin logout
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResult"
+
+  /admin/me:
+    get:
+      operationId: adminMe
+      tags: [admin]
+      summary: Check admin session
+      responses:
+        "200":
+          description: Admin session info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+        "401":
+          description: Unauthorized
+
+  /stats/overview:
+    get:
+      operationId: getStatsOverview
+      tags: [stats]
+      summary: Overview statistics
+      responses:
+        "200":
+          description: Overview stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsOverview"
+
+  /stats/detailed:
+    get:
+      operationId: getStatsDetailed
+      tags: [stats]
+      summary: Detailed statistics with filters
+      parameters:
+        - name: managerId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: difficulty
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: dateFrom
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: dateTo
+          in: query
+          schema:
+            type: ["string", "null"]
+      responses:
+        "200":
+          description: Detailed stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsDetailed"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +334,408 @@ components:
       required:
         - status
 
+    Manager:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        created_at:
+          type: string
+        training_count:
+          type: integer
+        completed_count:
+          type: integer
+        avg_score:
+          type: ["number", "null"]
+      required:
+        - id
+        - name
+        - created_at
+        - training_count
+        - completed_count
+
+    ManagerInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
+        - name
+
+    ManagerDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        created_at:
+          type: string
+        training_count:
+          type: integer
+        completed_count:
+          type: integer
+        avg_score:
+          type: ["number", "null"]
+        avg_scores_by_criterion:
+          type: object
+          additionalProperties:
+            type: ["number", "null"]
+        recent_trainings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Training"
+        typical_problems:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - name
+        - created_at
+        - training_count
+        - completed_count
+        - avg_scores_by_criterion
+        - recent_trainings
+        - typical_problems
+
+    Training:
+      type: object
+      properties:
+        id:
+          type: integer
+        manager_id:
+          type: integer
+        manager_name:
+          type: string
+        difficulty:
+          type: string
+        property_type:
+          type: string
+        status:
+          type: string
+        started_at:
+          type: string
+        completed_at:
+          type: ["string", "null"]
+        overall_score:
+          type: ["number", "null"]
+      required:
+        - id
+        - manager_id
+        - manager_name
+        - difficulty
+        - property_type
+        - status
+        - started_at
+
+    TrainingInput:
+      type: object
+      properties:
+        manager_id:
+          type: integer
+        difficulty:
+          type: string
+        property_type:
+          type: string
+      required:
+        - manager_id
+        - difficulty
+        - property_type
+
+    TrainingDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        manager_id:
+          type: integer
+        manager_name:
+          type: string
+        difficulty:
+          type: string
+        property_type:
+          type: string
+        status:
+          type: string
+        started_at:
+          type: string
+        completed_at:
+          type: ["string", "null"]
+        overall_score:
+          type: ["number", "null"]
+        client_profile:
+          type: ["object", "null"]
+          additionalProperties: true
+        final_report:
+          type: ["object", "null"]
+          additionalProperties: true
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+        feedbacks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Feedback"
+      required:
+        - id
+        - manager_id
+        - manager_name
+        - difficulty
+        - property_type
+        - status
+        - started_at
+        - messages
+        - feedbacks
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+        training_id:
+          type: integer
+        role:
+          type: string
+        content:
+          type: string
+        created_at:
+          type: string
+      required:
+        - id
+        - training_id
+        - role
+        - content
+        - created_at
+
+    Feedback:
+      type: object
+      properties:
+        id:
+          type: integer
+        training_id:
+          type: integer
+        manager_message_id:
+          type: integer
+        feedback_json:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+      required:
+        - id
+        - training_id
+        - manager_message_id
+        - feedback_json
+        - created_at
+
+    MessageInput:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+        - content
+
+    AIResponse:
+      type: object
+      properties:
+        client_reply:
+          type: string
+        coach_feedback:
+          type: object
+          properties:
+            strengths:
+              type: string
+            mistakes:
+              type: string
+            next_step:
+              type: string
+            recommendation:
+              type: string
+            example_phrase:
+              type: string
+          required:
+            - strengths
+            - mistakes
+            - next_step
+            - recommendation
+            - example_phrase
+        manager_message_id:
+          type: integer
+        client_message_id:
+          type: integer
+        feedback_id:
+          type: integer
+      required:
+        - client_reply
+        - coach_feedback
+        - manager_message_id
+        - client_message_id
+        - feedback_id
+
+    FinalReport:
+      type: object
+      properties:
+        overall_score:
+          type: number
+        scores:
+          type: object
+          additionalProperties: true
+        strengths:
+          type: array
+          items:
+            type: string
+        problems:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+        ideal_strategy:
+          type: string
+        client_outcome:
+          type: string
+      required:
+        - overall_score
+        - scores
+        - strengths
+        - problems
+        - recommendations
+        - ideal_strategy
+        - client_outcome
+
+    AdminLoginInput:
+      type: object
+      properties:
+        login:
+          type: string
+        password:
+          type: string
+      required:
+        - login
+        - password
+
+    AdminLoginResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+        - message
+
+    AdminSession:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+      required:
+        - authenticated
+
+    DeleteResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+        - message
+
+    StatsOverview:
+      type: object
+      properties:
+        total_managers:
+          type: integer
+        total_trainings:
+          type: integer
+        completed_trainings:
+          type: integer
+        avg_overall_score:
+          type: ["number", "null"]
+        avg_objections_score:
+          type: ["number", "null"]
+        avg_closing_score:
+          type: ["number", "null"]
+        recent_trainings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Training"
+      required:
+        - total_managers
+        - total_trainings
+        - completed_trainings
+        - recent_trainings
+
+    StatsDetailed:
+      type: object
+      properties:
+        total_trainings:
+          type: integer
+        avg_overall_score:
+          type: ["number", "null"]
+        avg_scores_by_criterion:
+          type: object
+          additionalProperties:
+            type: ["number", "null"]
+        manager_ranking:
+          type: array
+          items:
+            $ref: "#/components/schemas/ManagerRankItem"
+        score_trend:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScoreTrendItem"
+        common_problems:
+          type: array
+          items:
+            type: string
+      required:
+        - total_trainings
+        - avg_scores_by_criterion
+        - manager_ranking
+        - score_trend
+        - common_problems
+
+    ManagerRankItem:
+      type: object
+      properties:
+        manager_id:
+          type: integer
+        manager_name:
+          type: string
+        avg_score:
+          type: ["number", "null"]
+        completed_count:
+          type: integer
+      required:
+        - manager_id
+        - manager_name
+        - completed_count
+
+    ScoreTrendItem:
+      type: object
+      properties:
+        date:
+          type: string
+        avg_score:
+          type: number
+        count:
+          type: integer
+      required:
+        - date
+        - avg_score
+        - count

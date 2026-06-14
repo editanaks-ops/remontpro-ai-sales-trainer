@@ -1,36 +1,52 @@
-# [Project name]
+# РемонтPRO — AI-тренер отдела продаж
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+B2B Back Office AI-сервис для внутреннего обучения менеджеров строительной компании по продажам услуг ремонта квартир и домов.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/api-server run dev` — запуск API сервера (port 8080)
+- `pnpm --filter @workspace/remontpro run dev` — запуск фронтенда (port 20349)
+- `pnpm run typecheck` — полная проверка типов
+- `pnpm run build` — typecheck + сборка всех пакетов
+- `pnpm --filter @workspace/api-spec run codegen` — регенерация API хуков и Zod схем
+- `pnpm --filter @workspace/db run push` — применение изменений схемы БД (только dev)
+- Required env: `DATABASE_URL` — Postgres connection string, `OPENROUTER_API_KEY` — ключ OpenRouter API
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
+- Frontend: React + Vite + Tailwind CSS + shadcn/ui + wouter
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
+- AI: OpenRouter API (модель из OPENROUTER_MODEL или meta-llama/llama-3.3-70b-instruct:free)
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Build: esbuild (CJS bundle)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — единственный источник правды для API контрактов
+- `lib/db/src/schema/` — схемы БД: managers.ts, trainings.ts, messages.ts, feedback.ts
+- `artifacts/api-server/src/routes/` — маршруты API: managers, trainings, admin, stats
+- `artifacts/api-server/src/lib/openrouter.ts` — клиент OpenRouter с JSON retry
+- `artifacts/api-server/src/lib/session.ts` — in-memory сессии (cookie-based)
+- `artifacts/remontpro/src/pages/` — страницы: ManagerSelect, TrainingApp, AdminLogin, AdminPanel
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- **Сессии через cookie**: для admin-авторизации используется in-memory Map + httpOnly cookie (не JWT), для простоты демо
+- **OpenRouter через backend**: API ключ никогда не передаётся в браузер — все вызовы AI только через сервер
+- **JSON retry**: если AI возвращает некорректный JSON — автоматически повторяет запрос с инструкцией вернуть только JSON
+- **Скрытый профиль клиента**: хранится в БД в client_profile_json, в API возвращается только при завершённой тренировке
+- **Модель**: по умолчанию meta-llama/llama-3.3-70b-instruct:free, можно переопределить через OPENROUTER_MODEL
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Менеджер выбирает свой профиль из 5 карточек и входит в тренажёр
+- Создаёт тренировку (сложность + тип объекта), получает первое сообщение AI-клиента
+- Ведёт диалог, после каждого сообщения получает рекомендации тренера в правой колонке
+- По завершении получает оценку по 7 критериям (1-10) и итоговый разбор
+- Администратор (admin / 123) видит статистику, список менеджеров, все тренировки
 
 ## User preferences
 
@@ -38,7 +54,10 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- После изменения маршрутов API нужно пересобрать api-server: `pnpm --filter @workspace/api-server run build`
+- После изменения openapi.yaml нужно запустить codegen: `pnpm --filter @workspace/api-spec run codegen`
+- Orval требует entity-shaped имена для схем запросов (не CreateXBody, а XInput) — иначе TS2308
+- OpenRouter free модели могут возвращать текст вокруг JSON — openrouter.ts обрабатывает это
 
 ## Pointers
 
