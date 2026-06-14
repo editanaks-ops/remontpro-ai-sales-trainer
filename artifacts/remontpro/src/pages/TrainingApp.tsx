@@ -66,7 +66,7 @@ export default function TrainingApp() {
         setIsNewTrainingModalOpen(false);
         setActiveTrainingId(data.id);
         queryClient.invalidateQueries({ queryKey: getGetTrainingsQueryKey({ managerId: manager?.id }) });
-      }
+      },
     }
   });
 
@@ -456,7 +456,14 @@ export default function TrainingApp() {
       </div>
 
       {/* Modals */}
-      <Dialog open={isNewTrainingModalOpen} onOpenChange={setIsNewTrainingModalOpen}>
+      <Dialog
+        open={isNewTrainingModalOpen}
+        onOpenChange={(open) => {
+          if (createTraining.isPending) return;
+          if (!open) createTraining.reset();
+          setIsNewTrainingModalOpen(open);
+        }}
+      >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Новая тренировка</DialogTitle>
@@ -496,12 +503,41 @@ export default function TrainingApp() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {createTraining.isPending && (
+                <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-800">
+                  <Spinner className="w-4 h-4 shrink-0 text-blue-600" />
+                  <span className="text-sm font-medium">Создаём AI-клиента…</span>
+                </div>
+              )}
+
+              {createTraining.isError && (
+                <div className="flex items-start gap-3 p-3 bg-destructive/10 border border-destructive/30 rounded-md text-destructive">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span className="text-sm">
+                    {createTraining.error instanceof Error
+                      ? createTraining.error.message
+                      : "Не удалось создать тренировку. Попробуйте ещё раз."}
+                  </span>
+                </div>
+              )}
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsNewTrainingModalOpen(false)}>Отмена</Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => { createTraining.reset(); setIsNewTrainingModalOpen(false); }}
+                disabled={createTraining.isPending}
+              >
+                Отмена
+              </Button>
               <Button type="submit" disabled={createTraining.isPending}>
-                {createTraining.isPending && <Spinner className="w-4 h-4 mr-2" />}
-                Начать тренировку
+                {createTraining.isPending ? (
+                  <>
+                    <Spinner className="w-4 h-4 mr-2" />
+                    Создаём…
+                  </>
+                ) : "Начать тренировку"}
               </Button>
             </DialogFooter>
           </form>

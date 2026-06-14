@@ -1,0 +1,1 @@
+- [OpenRouter Cyrillic header bug](openrouter-header-bug.md) — Node.js fetch rejects non-ASCII header values; Cyrillic in X-Title caused all OpenRouter calls to fail silently.
